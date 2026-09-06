@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16
+    container_name: crimelink-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crimelink
+      POSTGRES_USER: crimelink
+      POSTGRES_PASSWORD: crimelink_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crimelink -d crimelink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: crimelink-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/crimelink_dev
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p crimelink_dev 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  pgdata:
+  neo4jdata:

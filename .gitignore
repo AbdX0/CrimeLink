@@ -1,0 +1,29 @@
+# Environment and local files
+.env
+*.env
+*.local
+.venv/
+venv/
+env/
+
+# Node / Frontend
+node_modules/
+dist/
+
+# Python cache & tests
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+coverage.xml
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

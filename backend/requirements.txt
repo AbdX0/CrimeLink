@@ -1,0 +1,37 @@
+# CrimeLink backend dependencies.
+# Keep this minimal. Add new packages only when a feature requires them.
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database (PostgreSQL)
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.5
+
+# Graph database (Neo4j)
+neo4j==6.3.0
+
+# Data ingestion (multipart upload + PDF text extraction)
+python-multipart==0.0.32
+pypdf==6.16.2
+
+# OCR fallback for scanned PDFs (Tesseract)
+pytesseract==0.3.13
+pymupdf==1.28.2
+Pillow==12.3.0
+
+# NLP named-entity extraction (spaCy)
+spacy==3.8.16
+
+# Entity resolution (fuzzy string matching)
+rapidfuzz==3.14.6
+
+# Configuration
+python-dotenv==1.2.3
+
+# Test-only
+httpx==0.28.1
+
+# Authentication (bcrypt password hashing + JWT access tokens)
+bcrypt==5.0.0
+PyJWT==2.13.0

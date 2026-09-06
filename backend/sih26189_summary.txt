@@ -1,0 +1,1055 @@
+=== PAGE 1 ===
+Executive Summary
+SIH26189 (Ministry of Home Affairs, “AI-Powered Criminal Network Analysis System”) calls for an AI-enabled
+investigation platform that ingests crime data, discovers hidden networks of suspects and events, and
+provides analysts with an interactive graph-based interface for intelligence (people, phones, vehicles,
+locations, transactions, etc.)【21†L10439-L10446】. The system must extract entities from varied sources
+(FIRs, CDRs, financial records, reports, social-media, etc.), build relationship maps, identify key
+influencers, detect suspicious patterns, and offer visual/analytic insights【21†L10439-L10446】. 
+In practice, this means developing a web/mobile prototype with pipelines for (1) data ingestion (mock/
+synthetic crime data), (2) NLP entity extraction (names, phone numbers, accounts, vehicles, locations,
+organizations, etc.), (3) entity resolution (deduplicating identities), (4) graph construction (nodes/edges
+for entities and relationships), (5) graph analytics (centrality, communities, pattern/anomaly detection),
+and (6) an investigator dashboard (searchable interface, network graph visualization, alerts). For a 36–72-
+hour hackathon, the MVP should focus on core features: data upload, basic NLP , simple graph builder , and
+an interactive network graph with highlighting of top suspects. A full product (post-hackathon) could
+expand on sources, sophisticated ML/LLM modules, advanced analytics and security. 
+Below is a deep implementation plan covering objectives and constraints, prioritized features (MVP vs.
+production), team roles, timeline (via Mermaid Gantt), architecture (Mermaid diagram), data schema
+(relational + graph), API design, synthetic data strategy, NLP pipeline details, graph analytics methods, UI/
+UX design (wireframes and user flows), security/privacy/ethics, deployment/CI, evaluation criteria, and risk
+mitigation. The plan assumes a 4–6 member CSE team, ~2–3 day hackathon, cloud-neutral approach (e.g.
+AWS/GCP/Github Actions). All recommended components are either open-source or easily accessible; no
+real sensitive data should be used (only synthetic/mock data to respect privacy). 
+Sources: Official SIH statement【21†L10439-L10446】; literature on criminal network analysis and
+knowledge-graph approaches【26†L87-L96】【31†L127-L136】; graph analytics guides【31†L229-L238】.
+These ground the design choices (e.g. knowledge graphs for multi-source integration【26†L87-L96】, rule-
+based anomaly detection【31†L127-L136】, centrality for influencer detection【31†L229-L238】). 
+1. SIH26189 Goals & Constraints
+Objective (official): “Develop an AI-powered system that automatically analyzes structured and
+unstructured crime-related data to uncover criminal networks, identify key influencers, detect
+suspicious patterns, and provide actionable intelligence for investigators.”【21†L10439-L10446】.
+Key Requirements:
+Data Sources: Ingest multiple data sources: FIRs, police reports, CDRs (call detail records),
+transaction logs, surveillance logs, social media intelligence, criminal databases, etc. (All synthetically
+mimicked for demo.)【21†L10439-L10446】. 
+Entity Extraction: Extract entities from text and data: persons, locations, vehicles, phone numbers,
+organizations, plus events and transactions【21†L10439-L10446】. 
+• 
+• 
+• 
+• 
+1
+
+=== PAGE 2 ===
+Relationship Mapping: Build multi-node networks showing connections (calls, transactions, co-
+location, memberships, etc.) among entities. 
+Key-Person Detection: Identify influential suspects (“kingpins”, “bridges” between clusters) via
+graph centrality measures【21†L10439-L10446】. 
+Pattern Detection: Detect suspicious network patterns (e.g. money laundering loops, sudden
+cluster activations, temporal patterns) and unusual behaviors【21†L10439-L10446】. 
+Visualization & Insights: Provide investigators with an interactive dashboard: searchable profiles,
+network graph views, timelines, alerts and drill-down analytics【21†L10439-L10446】. 
+Constraints:
+Hackathon Scope: Prototype/MVP in 36–72 hours; focus on core functionality rather than a
+complete polished system. 
+Data: No real crime data available; use synthetic/mock data (fake names/phone/transactions). Avoid
+any real sensitive data – treat this as a demonstration only.
+Team: 4–6 members, mixed skills (front-end, back-end, data/ML, UX). Assume typical computing
+resources (no specialized hardware required).
+Platform: Cloud-neutral (can use AWS/GCP/Azure or on-campus servers); prefer quick setup (e.g.
+free-tier DB, in-memory graphs).
+Regulations: While not dealing with real data, be mindful of privacy and bias (see Sec. 9). Use open
+libraries (Python, Node/React, etc.).
+These align with the official problem: it emphasizes “AI/ML, NLP , and Graph Analytics”【21†L10439-
+L10446】. The judges will expect an integrated solution covering all above aspects (data fusion → AI →
+graph → UI), even if each is a basic prototype. 
+2. Feature List (MVP vs Full Product)
+Below is a prioritized breakdown of features, first as 36–72h hackathon MVP, then extended for
+production:
+Feature Hackathon MVP Full/Advanced Version
+Data Ingestion
+Upload CSV/JSON/text for: (a) Sample FIRs/
+reports (text), (b) CDRs (calls), (c) Financial
+transactions (bank transfers), (d) Case
+metadata (ID, date). Data stored in simple
+DB or JSON store.
+Integrate actual data feeds/
+APIs. Auto-fetch from systems
+(police DB, telecom APIs, etc.).
+Real-time stream ingestion.
+Entity Extraction
+Basic NER pipeline (e.g. spaCy, HuggingFace,
+or regex patterns) to tag: people, phones,
+accounts, vehicles, locations, orgs. Can use
+pre-trained NER (fine-tune on crime context if
+time).
+Train custom NER models on
+crime corpora. Include
+speech-to-text (for voice
+evidence). Multilingual
+support (Hindi names, etc.).
+Handle OCR (paper scans).
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+2
+
+=== PAGE 3 ===
+Feature Hackathon MVP Full/Advanced Version
+Entity Resolution
+Simple matching: unify exact/near matches
+(e.g. same person name or phone). Possibly
+manual linking via UI for ambiguous cases.
+Use sophisticated resolution:
+clustering similar names via
+fuzzy matching or pre-trained
+embeddings, linking multiple
+IDs (ID documents, aliases).
+Graph
+Construction
+One graph DB (e.g. Neo4j or TigerGraph) or
+in-memory graph. Node types: Person,
+Phone, Account, Vehicle, Location, Case. Edge
+types: CALLS, TRANSFERRED, OWNS, 
+LOCATED_AT, ASSOCIATED_WITH, etc.
+(Mapping from data).
+Optimize graph schema. Use
+property graphs with
+attributes (timestamp,
+amounts). Multi-graph views
+(e.g. separate by crime type).
+Elastic scaling for large
+graphs.
+Graph Analytics
+Compute basic metrics: degree centrality,
+betweenness centrality, PageRank. Identify
+top-k central people (potential influencers)
+【24†L53-L62】. Detect communities
+(Louvain or label propagation). Implement
+simple anomaly rules: e.g. detect cycles in
+transaction graph (fraud ring), or high-
+volume patterns【31†L131-L142】【31†L229-
+L238】.
+Advanced pattern mining:
+graph ML (GNN for anomaly),
+motif detection (fraud
+patterns), temporal sequence
+analysis. Predictive analytics
+(forecast suspicious linking).
+Integrate knowledge graph
+queries (Cypher).
+UI / Dashboard Web-based interface (React or Flask) with:
+- Search/Query:
+lookup person/ID to
+see profile.
+- Network Graph:
+interactive
+visualization (D3.js,
+Cytoscape.js) of
+neighbors (few
+hops).
+- Entity Profile:
+details (connections
+count, roles).
+- Alerts Panel:
+highlight suspicious
+detections (e.g.
+“Cycle of 3 accounts
+with rapid
+transfers”).
+Fully integrated dashboard: user
+authentication (RBAC), case management,
+analytics charts. Real-time filtering (by date,
+region, crime type). Natural language
+question interface (LLM Q&A). Automated
+report generation (using LLMs【24†L53-
+L62】). Mobile app access.
+3
+
+=== PAGE 4 ===
+Feature Hackathon MVP Full/Advanced Version
+Suspicious
+Patterns
+Hard-coded checks (e.g. “account A→B→C→A
+is cycle”), threshold rules (e.g. > $X
+transferred in < Y hours【31†L142-L150】).
+Flag anomalies via simple heuristics (degree
+outliers, unusual edges).
+Machine learning for anomaly
+(auto threshold, statistical
+profiling, GNN anomaly
+detection). Integrate domain
+rules (FBI known patterns).
+Continuous learning from
+feedback.
+Report/Export
+Basic “generate report” button compiling key
+findings (top influencers, flagged patterns,
+network snapshot) – perhaps PDF or on-
+screen.
+Automated intelligence
+reports (LLM summarization
+【24†L83-L92】, charts,
+exportable docs). Audit trails/
+logs.
+Collaboration Single-user prototype.
+Multi-user with roles
+(investigator , analyst). Change
+tracking, notes, sharing.
+Each MVP feature should be demonstrable end-to-end. For example, “Upload CSV of transactions → extract
+nodes/edges → show small network graph with one highlighted anomaly”. Full features illustrate future
+directions and add polish but are lower priority in 36h. Prioritize as:
+Core Pipeline: data upload → NLP extraction → graph build.
+Graph UI: basic network viz with one-hop or two-hop neighbor expansion.
+Key Persons: compute centralities and mark top nodes.
+Basic Anomalies: one or two rules (e.g. transaction cycles or large transfers).
+Search/Profile: search by person name or ID, show graph around it.
+Dashboard: simple metrics (counts of nodes, alerts panel).
+Output: allow export or summary view.
+All except UI layers can be built via scripts and simple endpoints. For a demo, the visual graph and
+highlighting should be impressive. 
+3. Development Plan (36–72h Hackathon)
+We assume a 4–6 person team. Roles may overlap, but a possible division:
+Role Responsibilities
+Team Lead / PM Coordinate tasks, manage timeline, integrate components, prepare demo.
+Backend Developer(s)
+(1-2)
+Set up database/graph DB, implement data ingestion API, entity extraction
+pipeline, graph builder , analytics engine.
+ML/NLP Engineer (1) Build the NLP extraction pipeline (using spaCy/Python or OpenAI), develop
+anomaly detection rules or models, compute centrality metrics.
+1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+7. 
+4
+
+=== PAGE 5 ===
+Role Responsibilities
+Frontend/Fullstack
+Developer (1-2)
+Develop web UI (React/Next.js or simple HTML+JS) for data upload, search,
+graph visualization, dashboards, and interactive elements.
+Data Engineer / QA (1) Create synthetic test data, write test scripts, perform integration testing,
+ensure data quality.
+Smaller teams may combine roles; e.g. one person can do backend+NLP , another frontend+UI/UX.
+Milestones & Timeline
+Below is an illustrative Gantt-style plan using a 60-hour hackathon timeframe (could be 36h with tighter
+sprints). The times are approximate (hrs): 
+gantt
+    title SIH26189 Development Timeline (Hackathon)
+    dateFormat  HH:mm
+    axisFormat  %H:%M
+    section Setup (0–2h)
+    Team kickoff & environment setup       :a0, 00:00, 02:00
+    section Sprint 1: Data & Architecture (2–14h)
+    Define data schema & API design        :a1, 02:00, 04:00
+    Create synthetic data (CSV/JSON)       :a2, 04:00, 06:00
+    Setup DB and GraphDB                   :a3, 06:00, 04:00
+    section Sprint 2: NLP & Ingestion (6–26h)
+    NLP extraction pipeline (entities)     :b1, 06:00, 10:00
+    Integrate extraction with ingestion    :b2, 16:00, 04:00
+    Build graph from ingested data         :b3, 20:00, 06:00
+    section Sprint 3: Analytics & Testing (26–40h)
+    Compute centrality & community         :c1, 26:00, 08:00
+    Implement suspicious-pattern rules     :c2, after c1, 08:00
+    Test graph analytics on data           :c3, after c2, 06:00
+    section Sprint 4: Frontend & UI (12–50h)
+    Design UI wireframes/user flow         :d1, 12:00, 04:00
+    Build frontend (search, graph view)    :d2, 16:00, 12:00
+    Connect frontend ↔ backend (API)       :d3, after d2, 06:00
+    section Sprint 5: Integration & Polish (50–60h)
+    Full system integration & debug        :e1, 50:00, 06:00
+    UI polishing, alerts, UX tweaks        :e2, after e1, 02:00
+    Prepare demo script and slides         :e3, after e2, 02:00
+    section Sprint 6: Buffer / Deployment (60–72h)
+5
+
+=== PAGE 6 ===
+    Optional features/improvements         :f1, 60:00, 04:00
+    Write brief docs, CI/CD config        :f2, after f1, 08:00
+Sprint 1: Agree on data model and APIs. Backend team sets up PostgreSQL (or similar) + Neo4j
+graph DB. Data engineer creates mock datasets (20–50 records of each type).
+Sprint 2: NLP engineer implements entity extractor (Python spaCy, regex, or GPT-3.5/4). Backend
+integrates it into ingestion: parse uploaded text/CSV and insert nodes/edges into graph DB.
+Sprint 3: Compute graph analytics: using Neo4j (Cypher) or Python (networkx). Write scripts to
+identify top central nodes (e.g. using degree, betweenness)【31†L175-L184】【31†L229-L238】.
+Implement simple anomaly rules (maybe as Cypher queries or Python graph checks【31†L229-
+L238】).
+Sprint 4: Frontend design: One person sketches UI (graph canvas, panels). Developer implements
+using React + D3/Cytoscape (or plain JS). Build forms: upload, search bar , info panel, graph view.
+Hook to backend endpoints.
+Sprint 5: Bring it all together . Test on synthetic scenarios. Add final touches (e.g. highlight suspicious
+edges in red, add filter by date). Prepare a 5–10 minute demo with scripted use-case.
+Sprint 6 (Optional): If time, add features like PDF report generation (e.g. wkhtmltopdf), additional
+data filters, or CI/CD pipelines (GitHub Actions for deployment tests).
+Total ~60h. A 36h sprint would condense/omit some polish: e.g. use fewer UI features, simpler data, cut CI
+steps.
+Deliverables by Milestone
+0–14h: Data & schema defined. Basic ingestion working (uploads go into DB).
+16–26h: NLP extraction integrated. Graph DB populated with entity nodes and edges (verify with
+simple queries).
+26–40h: Analytics working (we can query top suspects, detect one ring pattern, etc.). Unit tests for
+extraction/analytics.
+16–50h: A functional UI: user can upload file, search for a person, see their network, see alerts.
+50–60h: Polished prototype. Demo script and presentation slides summarizing the solution.
+4. Architecture, Stack, Schema, API
+4.1 System Architecture
+A typical architecture for this system is:
+graph TD
+    subgraph Frontend/UI
+        A[Web Browser (React/JS)] 
+    end
+    subgraph Backend/API
+        B1[REST API (FastAPI/Express)]
+        B2[Python NLP Pipeline / AI Modules]
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+6
+
+=== PAGE 7 ===
+        B3[Analytics Service (Python)]
+    end
+    subgraph DataStores
+        C1[(Relational DB: PostgreSQL)] 
+        C2[(Graph DB: Neo4j or AWS Neptune)]
+    end
+    subgraph External
+        D1[Mock Data Files (CSV/JSON)]
+    end
+    A -->|HTTP/REST| B1
+    B1 --> C1
+    B1 --> C2
+    B2 --> C2
+    B3 --> C2
+    B1 --> B2
+    B1 --> B3
+    D1 --> B1
+The Frontend (React/Next.js or plain JS) communicates with the Backend API via HTTP . 
+Backend (Node.js or Python FastAPI) provides endpoints for uploading data, querying, and
+retrieving analytics. 
+Relational DB (PostgreSQL) stores raw records (cases, CDRs, transactions). Graph DB (Neo4j) stores
+the network of entities. 
+NLP/ML Module (Python) runs entity extraction on uploaded text, then populates the graph. 
+Analytics Module (Python or built-in to graph DB) computes centrality and anomalies. 
+External Data are the synthetic CSV/JSON files fed into the system.
+This separation allows using specialized tools: e.g. Neo4j for graph queries; FastAPI (Python) tying NLP and
+Neo4j; React for visualization. 
+4.2 Technology Stack (Recommendations)
+Component Choice Alternatives
+Frontend React (with Cytoscape.js or D3.js for
+graphs)
+Next.js, Angular , Vue, or plain
+HTML/JS
+Backend Python (FastAPI or Flask) Node.js (Express/Koa), Spring Boot
+(Java), Go
+Database PostgreSQL (structured data) MySQL, SQLite (for prototyping)
+Graph Database Neo4j (community edition) Amazon Neptune, ArangoDB,
+TigerGraph, JanusGraph
+NLP/ML Python (spaCy, Transformers, NLTK) Java (Stanford NLP), HuggingFace
+APIs, Azure OpenAI
+• 
+• 
+• 
+• 
+• 
+• 
+7
+
+=== PAGE 8 ===
+Component Choice Alternatives
+Graph Analytics Neo4j built-ins (Cypher , Graph Data
+Science lib) or Python (networkx, igraph) MATLAB (no), GraphX (Spark)
+Visualization Cytoscape.js, vis.js, or D3.js for networks;
+Chart.js or ECharts for stats Sigma.js, Alchemy.js
+Authentication JWT tokens (FastAPI-JWT) OAuth2, Keycloak, Firebase Auth
+Hosting/
+Deployment
+Heroku/AWS EC2/GCP App Engine (for
+hackathon quick deploy)
+Docker/Kubernetes on cloud,
+Serverless (Lambda/API Gateway)
+CI/CD GitHub Actions for build/test GitLab CI, Jenkins
+Justification: Python + Neo4j is a common stack for graph + NLP . FastAPI is fast to code and supports async.
+React/Cytoscape is widely used for interactive graph UIs. All have free tiers for quick hackathon deployment.
+4.3 Data Schema
+We need to store:
+Raw records (FIRs, CDRs, transactions).
+Entities and relationships (in graph form).
+Relational Tables (PostgreSQL)
+Possible tables:
+cases ( id , date , description_text , location_id , etc.)
+fir_reports ( id , case_id , officer , content_text )
+persons ( id , name , aliases  json, age , etc.) – could be partial; many will be in graph.
+phones ( number , owner_person_id )
+transactions ( id , from_account , to_account , amount , date , location_id )
+cd_recordings ( id , caller_number , callee_number , start_time , duration , case_id )
+vehicles ( id , plate_number , owner_person_id )
+locations ( id , name , latitude , longitude )
+For the hackathon, storing some of these in Postgres is optional. We may ingest CSVs directly into graph DB.
+But a SQL table for cases can let us query metadata.
+Graph Model (Neo4j)
+Nodes:
+(:Person {name, gender, age, ...})
+(:Phone {number})
+(:Account {acct_id})
+(:Vehicle {plate})
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+8
+
+=== PAGE 9 ===
+(:Location {name})
+(:Case {case_id, description})
+(:Organization {name})
+Edges (relationships), with possible properties (e.g. timestamp, amount):
+(:Person)-[:HAS_PHONE]->(:Phone)
+(:Person)-[:INVOLVED_IN]->(:Case)
+(:Phone)-[:CALLED]->(:Phone)  (with properties date/time)
+(:Account)-[:TRANSFERRED_TO]->(:Account)  (with amount, date)
+(:Person)-[:OWNS]->(:Vehicle)
+(:Person)-[:CONNECTED_WITH]->(:Person)  (undirected, e.g. family or associates)
+(:Person)-[:LOCATED_AT]->(:Location)  (with timestamp)
+(:Case)-[:AT_LOCATION]->(:Location)
+(:Person)-[:MEMBER_OF]->(:Organization)
+etc.
+For example, when ingesting a transaction record ( from_account , to_account ), create nodes for those
+accounts (or link to Person  if known) and an edge [:TRANSFERRED_TO {amt, date}] .
+Table: Graph Nodes/Edges
+Node (Label) Key Props Edge (Type) From Label - To Label
+Person person_id, name HAS_PHONE Person → Phone
+Phone number INVOLVED_IN Person → Case (if call evidence)
+Account account_id CALLED Phone → Phone (call edge)
+Vehicle plate_number TRANSFERRED_TO Account → Account (transaction edge)
+Location location_id, name OWNS Person → Vehicle
+Case case_id, desc LOCATED_AT Person/Case → Location
+Organization org_id, name MEMBER_OF Person → Organization
+ASSOCIATED_WITH Person ↔ Person (relationship)
+Graph DB is flexible – no fixed schema required, but definining expected node/edge types clarifies queries.
+4.4 API Design
+Key endpoints (assuming REST):
+POST /upload  – Upload data files (CSV/JSON). Body: files for “cases”, “cdrs”, “transactions”, “firs”,
+etc. Backend will parse and ingest.
+POST /ingest/text  – Submit raw text (e.g. FIR content); returns extracted entities.
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+9
+
+=== PAGE 10 ===
+GET /graph/person/{personId}  – Get graph data for a person (neighbors within 2 hops).
+Returns nodes and edges JSON for visualization.
+GET /search?q={name_or_id}  – Search persons or cases by name or keywords; returns
+matching IDs.
+GET /analytics/centrality  – Returns list of top-K persons by chosen centrality metrics.
+GET /analytics/suspicious  – Returns detected suspicious patterns (e.g. node cycles) and
+involved entities.
+GET /profile/person/{personId}  – Returns summary stats for that person: num connections,
+threats, cases, etc.
+POST /report  – Generate a summary report (optionally email or download PDF).
+GET /graph/connection?from=A&to=B  – (Optional) shortest path between two persons.
+All endpoints return JSON with structured results (to be consumed by frontend). Use standardized schemas,
+e.g. GeoJSON or node-edge lists for graph.
+Example API payloads (for demonstration): 
+Upload CSV of transactions: 
+POST /upload
+Content-Type: multipart/form-data
+{ files: ["transactions.csv", "cdr.csv", "fir.json"] }
+Search person: 
+GET /search?q=Rahul+Sharma
+Response: {"type":"person","id":123,"name":"Rahul Sharma","alias":["R. Sharma"]}
+Get network: 
+GET /graph/person/123
+Response:
+{
+"nodes": [
+{"id":123, "label":"Rahul Sharma", "type":"Person"},
+{"id":"98XXXXXX12", "label":"98XXXXXX12", "type":"Phone"}
+// ...
+],
+"edges": [
+{"from":123,"to":"98XXXXXX12","type":"HAS_PHONE"},
+{"from":"98XXXXXX12","to":124,"type":"CALLED","props":
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+10
+
+=== PAGE 11 ===
+{"time":"2026-08-24T10:15:00"}}
+]
+}
+- Analytics: 
+GET /analytics/centrality
+Returns top persons: 
+[{"personId":45,"name":"Amit Kumar","degree":6,"pagerank":0.04}, ...]
+5. Data Strategy
+Since no real data is available, we generate synthetic datasets that mimic crime/investigation records. The
+key is to create realistic multi-source data that exercises all features:
+People: generate 50–200 fictional people with names, addresses. Assign random personal details.
+Phones: assign each person 1–2 phone numbers.
+Locations: generate 10–20 locations (cities, addresses, jail, police stations).
+Vehicles: assign license plates to some people.
+Cases/FIRs: create ~30 cases, each with:
+a case ID, date, description text (fake police narrative).
+involved people (some suspects, victims, officers).
+events (e.g. "on date, Person A called Person B", "Person C transferred $X to Person D", etc. Include
+these in logs).
+Call Detail Records (CDR): ~200 entries: (caller, callee, timestamp, duration, 
+towerLocation)
+Transactions: ~200 transfers: (fromAccount, toAccount, amount, date)  including some
+multi-hop chains.
+Social media (optional): simple logs: "Person A posted about Person B", etc.
+Associations: define a few groups or gangs. E.g. “Gang Alpha” with 3 leaders and 5 members. Some
+persons have MEMBER_OF .
+Criminal History DB: list some known associates or prior convictions (for flavor).
+Sample Record Formats
+Cases (JSON or CSV):
+{
+"case_id": "C001",
+"date": "2026-08-20",
+"description": "Multiple gunshots reported at Mall Road. Suspect Rahul Sharma 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+11
+
+=== PAGE 12 ===
+seen fleeing in a car.",
+"suspects": ["Rahul Sharma", "Amit Kumar"],
+"location": "Mall Road, CityX"
+}
+FIRs (text):
+FIR: On 2026-08-19 at 22:15, witnesses reported Rahul Sharma meeting Amit 
+Kumar near Central Station. 
+Surveillance: Rahul called 9876543210 at 10pm. 
+The NLP should extract: Person: Rahul Sharma, Amit Kumar; Phone: 9876543210; Location: Central Station;
+Date: 2026-08-19.
+CDRs (CSV):
+Caller,Receiver,StartTime,Duration,CellTower
+9876543210, 9123456789, 2026-08-19T22:15:00, 120, TowerA
+Transactions (CSV):
+FromAccount,ToAccount,Amount,Date
+ACC1001,ACC2003,50000,2026-08-19T20:00:00
+People List (CSV):
+id,name,alias,age
+P001,Rahul Sharma,Rahul,34
+P002,Amit Kumar,Amit,29
+Vehicle List:
+id,plate,owner_id
+V001,UP32 ABC 1234,P001
+Location List:
+id,name,lat,lon
+L001,Mall Road,28.7,77.1
+• 
+• 
+• 
+• 
+• 
+• 
+12
+
+=== PAGE 13 ===
+Synthetic Data Generation
+Use Python or Google Sheets to create fake names (e.g. https://github.com/ianstormtaylor/english-
+name-generator) and numeric IDs. 
+Ensure connectivity: e.g. Person A calls Person B, Person B transfers money to Person C, etc.,
+forming a chain. Add one cycle (money laundering ring) for pattern detection.
+Include distractors (unrelated persons, calls) to test filtering.
+Anonymization & Ethics
+All data is synthetic. No real names. Use random or clearly fake identifiers.
+If using any real phrases, ensure they contain no PII (these samples are not real people).
+This demonstrates respect for privacy and avoids ethical pitfalls【26†L87-L96】.
+Test Cases
+Design a few scenarios to validate features:
+Simple Connection: Person X -> Y via one phone call and one account transaction. 
+Search X should show Y as connected (via Phone, Account).
+Influencer Detection: Person A calls 5 others (hub). Should rank high by degree.
+Suspicious Cycle: A→B ($100k) →C ($99k) →A (5k). System should flag cycle.
+Community: Two separate gangs, weak links between. Community detection finds 2 clusters.
+Timeline Filter: If time allows: filter calls/transactions within a date range.
+Use a few SQL/Neo4j queries to validate synthetic data:
+-- Example: Count transactions per account (Postgres)
+SELECT from_account, COUNT(*) FROM transactions GROUP BY from_account;
+// Neo4j: find cycles of length 3
+MATCH (a)-[:TRANSFERRED_TO]->(b)-[:TRANSFERRED_TO]->(c)-[:TRANSFERRED_TO]->(a)
+RETURN a, b, c LIMIT 5;
+6. AI/NLP Pipeline
+We need to extract entities from unstructured text (FIRs, social media, reports). 
+• 
+• 
+• 
+• 
+• 
+• 
+1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+13
+
+=== PAGE 14 ===
+Tools & Models
+Use a Named Entity Recognition (NER) model: e.g. spaCy’s en_core_web_sm  or custom, fine-
+tuned NER (HuggingFace Transformers like BERT-ner) with labels for Person, Location, Org, Date,
+Money, Phone (regex can catch phone, account numbers). 
+Regex for specific patterns:
+Phone numbers: \b\d{10}\b .
+Vehicle plates: [A-Z]{2}\d{2}\s*[A-Z]{1,2}\s*\d{4}  (Indian format).
+Accounts: ACC\d+  or similar format.
+Possibly use OpenAI/GPT-4: a prompt like “Extract PERSON, LOCATION, VEHICLE, PHONE, DATE entities
+from this text.” and parse JSON output.
+For CLI: spaCy + pipeline or a small Python script.
+Pipeline Steps
+Preprocessing: Clean text (normalize dates, remove punctuation in known patterns if needed).
+NER Tagging: Run model to tag PERSON, ORG, GPE (locations) etc. Custom label for VEHICLE if
+possible (else regex).
+Postprocessing: Use regex to catch additional (phones, amounts). Merge overlapping entities. 
+Entity Linking (resolution):
+Normalize names (lowercase, remove honorifics) and cluster . 
+If the same name appears, assign same ID. Use string similarity (Levenshtein) for variations.
+Map extracted phone and account strings to nodes (if same number from multiple sources).
+Tools: simple dictionaries or graph-based Entity Resolution (not heavy ML given time). 
+Confidence Scoring:
+Use model confidence (NER probability). For regex, confidence = 1. 
+Could assign a score (e.g. spaCy’s .score  or GPT logprobs) to each entity.
+Store confidence in graph as node attribute (optional).
+Prompt Template (if using GPT-4):
+Extract and list entities of types PERSON, LOCATION, VEHICLE, PHONE, 
+ORGANIZATION, and DATE from the following text. Output as JSON.
+Text: "Rahul Sharma met Amit Kumar on 2026-08-14 near Delhi Railway Station. 
+Amit’s car (MH12 AB1234) was seen. Rahul called 9876543210 later."
+Response (expected JSON): 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+7. 
+8. 
+9. 
+10. 
+11. 
+12. 
+14
+
+=== PAGE 15 ===
+{
+"PERSON": ["Rahul Sharma", "Amit Kumar"],
+"DATE": ["2026-08-14"],
+"LOCATION": ["Delhi Railway Station"],
+"VEHICLE": ["MH12 AB1234"],
+"PHONE": ["9876543210"]
+}
+Libraries
+Python: spaCy , flair , or HuggingFace Transformers ( pip install spacy transformers ).
+Regex built-ins for specific formats.
+Possibly flashtext  for fast dictionary matching of known names.
+For entity linking, networkx  or dedupe  library could be used, but often not needed in MVP .
+Evaluation
+Metrics: Precision/recall on entity detection (mock ground truth). We can split synthetic text dataset
+and manually mark some.
+Test Set: 20–50 synthetic sentences with expected entities. Compute F1 scores for each entity type.
+Aim for high recall (so no missed suspects), accept some false positives with human review.
+This pipeline yields structured entities and relations from text, feeding into graph. The literature on criminal
+KG suggests similar pipelines【26†L87-L96】.
+7. Graph Analytics
+Once the graph is built, we run analytics to identify insights:
+Centrality & Influence
+Common centrality metrics【31†L125-L134】【31†L142-L150】:
+Degree Centrality: # of direct connections. Identifies well-connected individuals.
+Betweenness Centrality: Nodes on many shortest paths. Detect “bridges” or brokers【24†L53-
+L62】.
+PageRank: Iterative influence measure (important if network is directed).
+Eigenvector/Closeness: Secondary possibilities (how central in entire network).
+Implementation: Neo4j Graph Data Science library (if available) or Python networkx . For Neo4j example:
+CALL gds.degree.stream({nodeProjection: 'Person', relationshipProjection:
+'ASSOCIATED_WITH'})
+YIELD nodeId, score
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+15
+
+=== PAGE 16 ===
+RETURN gds.util.asNode(nodeId).name AS person, score ORDER BY score DESC LIMIT
+5;
+Or Python:
+import networkx as nx
+G = nx.from_pandas_edgelist(df_edges, 'source', 'target')
+cent = nx.degree_centrality(G)
+top = sorted(cent.items(), key=lambda x: x[1], reverse=True)[:5]
+Community Detection
+Use Louvain or Label Propagation to find clusters (criminal gangs)【24†L73-L82】. In Neo4j:
+CALL gds.louvain.stream({nodeProjection:'Person',
+relationshipProjection:'ASSOCIATED_WITH'})
+YIELD nodeId, communityId
+RETURN communityId, collect(gds.util.asNode(nodeId).name) AS members;
+Path Finding
+Shortest Path: e.g. find how two suspects are related via shared edges. Useful in UI ("show link
+chain").
+Friends-of-Friends: Expand neighbors up to 2 hops.
+Anomaly Detection (Suspicious Patterns)
+Two approaches:
+Rule-Based (explainable): For example, flag if:
+High volume: A node with very high transaction count or call volume (outlier degree)【31†L139-
+L148】.
+Cycle Detection: Identify directed cycles in money flows (common money-laundering sign)
+【31†L229-L238】.
+Rapid succession: Same account transfers large sum multiple times in short window. 
+Isolated cluster: A small fully connected clique (money mule ring).
+Implement as custom Cypher or Python checks: 
+// Example: find transfer cycles of length 3 (a->b->c->a)
+MATCH path=(a:Account)-[:TRANSFERRED_TO*3]->(a)
+• 
+• 
+1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+16
+
+=== PAGE 17 ===
+WHERE all(r IN relationships(path) WHERE r.amount > 10000)
+RETURN nodes(path)
+Time-based rules: E.g. >3 transfers from same account within 1 hour【31†L141-L149】 (graph
+analyzer can check timestamps).
+Statistical/ML: (Probably beyond hackathon).
+Graph autoencoders or GNN-based anomaly detection (only if time).
+Use unsupervised outlier detection on degree/hubs.
+Given hackathon time, rule-based is safer and explainable【31†L229-L238】. The sample pseudocode (from
+PuppyGraph) is instructive; we can implement similar in Python/Neo4j【31†L231-L239】.
+Example Pseudocode (Python):
+def detect_cycles(G):
+cycles = []
+for node in G.nodes():
+for neighbor in G.successors(node):
+if G.has_edge(neighbor, node):
+cycles.append((node, neighbor))
+return cycles
+For more complex, use networkx simple_cycles for directed graph of accounts.
+Complexity: For hundreds of nodes, simple algorithms (O(N^2)) are fine. Mention that for large graphs, use
+optimized libraries.
+8. UI/UX Design
+User flow: An investigator uses the app as follows:
+Login (if built) → Dashboard shows summary (total cases, flagged alerts).
+Upload Data: Navigate to “Upload” page, select mock data files (e.g. cases.csv, transactions.csv).
+Click “Ingest.” Backend populates DB and graph.
+Search Person: Use search box to find “Rahul Sharma”. The Profile panel appears: name, alerts, #
+connections, # cases, risk score.
+View Network: Click “View Network” shows a force-directed graph centered on Rahul. Nodes are
+people, phones, accounts, etc. Edges colored by type (calls, transfers).
+Inspect Node: Click on an edge or node (e.g. account 123). See edge details (time, amount). Right
+panel shows entity details.
+7. 
+8. 
+9. 
+10. 
+1. 
+2. 
+3. 
+4. 
+5. 
+17
+
+=== PAGE 18 ===
+Alerts / Analytics: On network screen or home page, see alerts like “Suspicious cycle detected:
+Rahul->Sameer->Amit->Rahul”.
+Case Timeline: Optionally view timeline of events for Rahul (calls and transfers chronology).
+Export/Report: Click “Generate Report” to download PDF of key findings.
+Key Screens/Wireframes:
+Home/Dashboard: Metrics tiles (total persons, cases, flags), recent alerts list.
+Upload Page: Form to upload CSV/JSON. (For MVP maybe skip UI, just assume fixed uploads via API.)
+Search Bar: top nav or sidebar .
+Person Profile: On search result or selection: picture/icon + stats.
+Network Graph: Canvas with nodes (icons for person, phone, etc.), zoom/pan. Legend/controls
+(filter by type). 
+Inspector Panel: On right, showing entity properties and connections summary.
+Alerts Panel: List of flagged patterns; clicking reveals subgraph.
+Sample UI Code Snippets:
+React component using Cytoscape.js for graph: 
+<CytoscapeComponent elements={elements} style={{ width: '600px', height:
+'400px' }} />
+HTML snippet for search: 
+<input type="text" id="searchBox" placeholder="Search person or ID" />
+<button onclick="search()">Go</button>
+Example API call from frontend: 
+fetch('/search?q=' + encodeURIComponent(query))
+.then(res => res.json())
+.then(data => showProfile(data));
+Demonstration Script (for judges):
+“First, we upload our synthetic data files (cases, calls, transactions). The system processes them via
+AI/NLP and graph-building. Now we search for 'Rahul Sharma'. The UI shows Rahul’s profile: 5
+connections, 2 cases, 1 alert. We open his network graph: his phone number and two bank
+accounts are connected. The system has highlighted in red a suspicious cycle among Rahul,
+Sameer, and Amit (Rahul→Sameer→Amit→Rahul). Clicking that alert opens the subgraph and
+underlying evidence (call logs and transaction details). The analytics panel shows Rahul has highest
+betweenness centrality, marking him as a key suspect. Finally, we export an auto-generated
+intelligence report summarizing these findings.”
+6. 
+7. 
+8. 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+18
+
+=== PAGE 19 ===
+Use simple, high-level language and interactive visuals to impress SIH judges.
+9. Security, Privacy, Ethics
+Data Privacy: Only synthetic data is used. Clearly state that all names/IDs are fictitious. Emphasize
+no personal data involved.
+Access Control: In full product, implement user authentication (e.g. JWT-based) and RBAC (role-
+based access control) so only authorized investigators see data. For prototype, this can be stubbed.
+Encryption: If deploying, use HTTPS and encrypt sensitive fields in storage. (Not needed in MVP but
+mention as future work).
+Audit Logging: Keep logs of user actions (viewing cases, exporting) for accountability (demo can log
+to console).
+Bias & Fairness: Synthetic data avoids real bias, but mention mindful that ML algorithms (if any)
+could reflect biases (e.g. nationality, caste). Ensure that AI modules do not flag individuals arbitrarily.
+Use explainable rules where possible.
+Ethical Use: The tool is meant for intelligence/investigation support only, not public use. Emphasize
+it assists lawful investigations, not invasion of privacy. 
+Legal Compliance: In real use, would comply with data protection laws (e.g. Indian IT Act). For
+prototype, state that no personal data is retained.
+Misuse Prevention: Consider rule: each query is logged; unusual rapid-fire queries trigger lockdown
+(to prevent scanning entire DB illegitimately).
+User Training: Include disclaimers that outputs are “assistive”; final decisions lie with human
+investigators.
+Citation on ethics (we can just mention common sense, or cite dictionary on "ethical" if needed – but skip
+that fluff).
+10. Deployment, Testing, Scalability
+Deployment
+Environment: Use a cloud VM or containerized Docker . E.g. one AWS EC2 (t3.medium) running the
+API & DB, or Heroku free dyno.
+Docker Compose: Set up a docker-compose.yml  with services: web  (API), db  (Postgres), 
+neo4j  (graph DB), redis  (if needed for caching).
+CI/CD: On GitHub, use Actions for:
+Linting and unit tests (Python pytest, JS lint).
+Auto-build Docker image.
+Deploy to a test server (Heroku or GitHub Container Registry).
+Testing: Write unit tests for:
+NLP extraction (run sample texts, check expected entities).
+Graph building (given inputs, check graph node counts).
+Analytics (given small graph, known centrality values).
+Load Testing (optional): For hackathon, skip. But note that graph DB should handle thousands of
+nodes easily.
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+19
+
+=== PAGE 20 ===
+Monitoring: Use simple logging (stdout), and optionally a dashboard (Grafana, or cloud logs).
+Scalability:
+Neo4j Community can handle moderate graphs (10k nodes easily). For more, consider Neo4j
+Enterprise or distributed graph DB.
+API uses stateless scaling: more instances behind load balancer .
+Data store: PostgreSQL for logs can scale vertically; might move to cloud SQL.
+CI/CD Flow (example)
+GitHub Actions:
+  - On push to main:
+    - Run tests (pytest, npm test).
+    - Build Docker image.
+    - Push to registry.
+    - Deploy to staging (Heroku) if tests pass.
+11. Evaluation & Success Criteria
+For SIH Judging, judges evaluate on: Innovation, technical feasibility, impact, architecture, presentation
+【9†L98-L106】. We must demonstrate:
+Innovation: Using AI/NLP + graph to solve the problem is novel here. Highlight combining
+knowledge graphs and LLMs as in practice【24†L53-L62】.
+Technical Depth: A working end-to-end system with AI extraction, graph analytics, and UI. Judges
+check if core challenges (entity extraction, network analysis) are addressed.
+Feasibility: The solution must be plausible. MVP should work in demo time. Show that 36h plan can
+yield a prototype.
+Impact/Usefulness: Emphasize how this aids investigations (e.g. “92% accurate leader detection”
+from GraphAware【24†L53-L62】). Provide a hypothetical scenario of preventing a crime via
+detected ring.
+Architecture: Clean architecture slides or diagrams. Explain technology choices (citing Neo4j for
+networks, spaCy for NER, etc.).
+Data Ethics: Assure data privacy, mention synthetic data use (this is positively viewed).
+Presentation: Clear demo script, crisp UI, articulate problem fit.
+Benchmarks:
+Show metrics on synthetic test (e.g. “Our NER extraction achieved 90% F1 on test set”).
+Reveal a sample of nodes: “Centrality detect: Rahul Sharma (score 0.23) is top influencer【31†L229-
+L238】”.
+If possible, compare with baseline (e.g. manual graph drawn by team for small example).
+Judges may simulate queries; ensure search and graph features are robust.
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+20
+
+=== PAGE 21 ===
+Specifically, evaluators may ask: “how does AI help?” Answer: NLP automatically extracts from text vs
+manual parsing【21†L10439-L10446】【26†L87-L96】. “Is this just visualization?” Show analytics too
+(centrality, anomaly).
+12. Risks & Mitigation; Future Roadmap
+Risks:
+Incomplete data handling: Our synthetic data may not capture complexity (slang, handwriting). 
+Mitigation: Make data varied, test odd cases.
+Model Accuracy: NER may mis-label. Mitigation: Use simple models with human review (UI can allow
+manual correction).
+Time Overrun: Integration can be tricky. Mitigation: Keep MVP lean; integrate as each piece is ready.
+Scalability in hackathon: Using Neo4j is straightforward, but initial learning curve. Mitigation: Use
+graph python library if Neo4j too heavy.
+Team coordination: Many moving parts. Mitigation: Frequent short syncs (every 4 hours) and clear task
+owners.
+UI complexity: Graph UI can be finicky. Mitigation: Use existing libs (Cytoscape) not custom SVG.
+Future Enhancements (beyond hackathon):
+Integrate LLMs to generate narrative intelligence reports (GraphAware approach【24†L83-L92】).
+Connect real-time data sources (mobile app for officers to upload evidence on site).
+Add link prediction: use GNNs to predict potential unknown links.
+Mobile App for field officers.
+Integration with national crime databases (CCTNS 2.0).
+Explainability: Show reason for each alert (e.g. “flagged because cyclical transfers”).
+Law Enforcement Tools: FOIR (freedom of info) compliance, cross-police-station sharing, blockchain
+for audit logs.
+With this plan, the team can build a compelling AI-driven criminal network analysis prototype within the
+hackathon window, satisfying SIH26189’s goals【21†L10439-L10446】 and showcasing advanced CS/AI skills
+in graph analytics【24†L53-L62】【31†L229-L238】.
+Citations
+Official SIH 2026 Problem Statement【21†L10439-L10446】. 
+Pozzi et al., Combining Knowledge Graphs and NLP for Criminal Investigations【26†L87-L96】
+(knowledge-graph/NLP approach). 
+GraphAware blog on AI + graph for crime analysis【24†L53-L62】 (illustrates combining network
+analysis with LLM). 
+PuppyGraph Graph Anomaly Detection (rule-based methods, example Cypher)【31†L229-L238】. 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+21
+
