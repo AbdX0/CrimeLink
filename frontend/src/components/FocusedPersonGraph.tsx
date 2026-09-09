@@ -26,9 +26,9 @@ export default function FocusedPersonGraph({
   const radius = Math.min(105, 60 + connections.length * 10);
 
   return (
-    <div className="relative w-full overflow-hidden bg-zinc-50 border border-zinc-200 rounded-lg p-3">
+    <div className="relative w-full overflow-hidden bg-[#101014] border border-zinc-800 rounded-lg p-3">
       <div className="absolute top-2 left-2 z-10">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 bg-white/80 px-1.5 py-0.5 rounded border border-zinc-200">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
           Person-to-Person Graph ({connections.length})
         </span>
       </div>
@@ -48,7 +48,7 @@ export default function FocusedPersonGraph({
             markerHeight="6"
             orient="auto-start-reverse"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="#71717a" />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
           </marker>
         </defs>
 
@@ -67,7 +67,7 @@ export default function FocusedPersonGraph({
                 y1={cy}
                 x2={x}
                 y2={y}
-                stroke="#a1a1aa"
+                stroke="#3f3f46"
                 strokeWidth="1.5"
                 strokeDasharray={conn.relationship_type === 'ASSOCIATED_WITH' ? '3 3' : undefined}
                 markerEnd="url(#arrow)"
@@ -78,7 +78,7 @@ export default function FocusedPersonGraph({
                 textAnchor="middle"
                 fontSize="8"
                 fontFamily="monospace"
-                fill="#52525b"
+                fill="#a1a1aa"
                 className="select-none font-semibold"
               >
                 {conn.relationship_type}
@@ -94,9 +94,9 @@ export default function FocusedPersonGraph({
             cy={cy}
             r={24}
             fill="#09090b"
-            stroke="#ffffff"
-            strokeWidth="3"
-            className="shadow-xs"
+            stroke="#10b981"
+            strokeWidth="2.5"
+            className="shadow-md"
           />
           <text
             x={cx}
@@ -105,7 +105,7 @@ export default function FocusedPersonGraph({
             fontSize="10"
             fontFamily="monospace"
             fontWeight="bold"
-            fill="#09090b"
+            fill="#ffffff"
             className="select-none"
           >
             {centerPersonName.length > 14 ? `${centerPersonName.slice(0, 12)}…` : centerPersonName}
@@ -129,8 +129,8 @@ export default function FocusedPersonGraph({
                 cx={x}
                 cy={y}
                 r={17}
-                fill="#27272a"
-                stroke="#ffffff"
+                fill="#18181c"
+                stroke="#3f3f46"
                 strokeWidth="2"
               />
               <text
@@ -139,7 +139,7 @@ export default function FocusedPersonGraph({
                 textAnchor="middle"
                 fontSize="9"
                 fontFamily="monospace"
-                fill="#18181b"
+                fill="#e4e4e7"
                 fontWeight="500"
                 className="select-none"
               >

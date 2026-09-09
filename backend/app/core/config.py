@@ -58,5 +58,9 @@ class Settings:
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")
     )
 
+    # Google Gemini API key for AI Assistant reasoning & interrogation
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-settings = Settings()
+
+settings = Settings()

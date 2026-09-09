@@ -74,3 +74,23 @@ def shortest_path(
     except Exception as exc:
         raise _503(f"Neo4j unavailable: {exc}")
     return {"algorithm": "shortest_path", **result}
+
+
+@router.get("/key-influencers")
+def key_influencers(
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    """Identify key network influencers (Kingpins, Brokers, Mules, Dispatchers)
+    using graph centrality algorithms (Degree Centrality, PageRank, and Betweenness Centrality).
+    """
+    try:
+        results = analytics.key_influencers(limit=limit)
+    except Exception as exc:
+        raise _503(f"Analytics computation failed: {exc}")
+    return {
+        "algorithm": "key_influencer_centrality",
+        "metrics_used": ["PageRank", "Betweenness Centrality", "Degree Centrality"],
+        "count": len(results),
+        "results": results,
+    }
+

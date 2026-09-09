@@ -9,7 +9,7 @@ export default function CrimeGraphLogo({
   className = 'w-6 h-6',
   size = 24,
   showText = true,
-  textClassName = 'text-xs font-semibold text-black tracking-tight',
+  textClassName = 'text-xs font-semibold text-white tracking-tight',
 }: CrimeGraphLogoProps) {
   return (
     <div className="inline-flex items-center gap-2 select-none">

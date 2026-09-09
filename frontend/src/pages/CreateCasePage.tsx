@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import CrimeGraphLogo from '../components/CrimeGraphLogo';
 import { processPipelineFile } from '../api/client';
+import { showToast } from '../utils/toast';
+import { emitPushNotification } from '../components/NotificationBell';
 
 export default function CreateCasePage() {
   const [title, setTitle] = useState('');
@@ -44,10 +46,12 @@ export default function CreateCasePage() {
 
     if (!title.trim()) {
       setError('Please provide a Case Title.');
+      showToast.warning('Validation Error', 'Please provide a Case Title before proceeding.');
       return;
     }
 
     setSubmitting(true);
+    const toastId = showToast.loading('Initializing case envelope & processing evidence...');
     try {
       let fileToUpload: File;
       if (attachedFiles.length > 0) {
@@ -60,9 +64,20 @@ export default function CreateCasePage() {
       }
 
       await processPipelineFile(fileToUpload, title);
+      showToast.dismiss(toastId);
+      showToast.success('Case Created', `Case "${title}" has been successfully initialized.`);
+      emitPushNotification({
+        title: 'Case Envelope Created',
+        message: `Case "${title}" [${priority}] registered with attached evidence.`,
+        severity: 'SUCCESS',
+        link: '/cases',
+      });
       navigate('/cases');
     } catch (err: any) {
-      setError(err?.message || 'Failed to initialize case envelope.');
+      showToast.dismiss(toastId);
+      const errMsg = err?.message || 'Failed to initialize case envelope.';
+      showToast.error('Case Initialization Failed', errMsg);
+      setError(errMsg);
     } finally {
       setSubmitting(false);
     }

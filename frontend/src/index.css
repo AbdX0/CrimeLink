@@ -1,70 +1,70 @@
 @import "tailwindcss";
 
 /* ============================================================
-   CRIMELINK — VERCEL-INSPIRED DESIGN SYSTEM
-   Clean, minimal, high-contrast SaaS & intelligence platform
+   CRIMELINK — CYBER INTELLIGENCE PLATFORM DESIGN SYSTEM
+   Deep Slate Dark Theme with Emerald Core Accents
    ============================================================ */
 
 :root {
   /* Background & Surface */
-  --background: #fafafa;
-  --surface: #ffffff;
-  --surface-muted: #f4f4f5;
+  --background: #09090b;
+  --surface: #121215;
+  --surface-muted: #18181c;
 
   /* Card */
-  --card-bg: #ffffff;
-  --card-border: #e4e4e7;
-  --card-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --card-bg: #121215;
+  --card-border: #27272a;
+  --card-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.7);
 
   /* Sidebar */
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #e4e4e7;
+  --sidebar-bg: #0c0c0e;
+  --sidebar-border: #27272a;
 
   /* Typography */
-  --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-tertiary: #a1a1aa;
-  --foreground: #09090b;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --foreground: #f4f4f5;
 
   /* Borders */
-  --border: #e4e4e7;
-  --border-subtle: #f4f4f5;
+  --border: #27272a;
+  --border-subtle: #18181c;
 
-  /* Accent — Vercel Pure Black */
-  --accent-color: #000000;
-  --accent-hover: #18181b;
-  --accent-muted: #f4f4f5;
+  /* Accent — Emerald Cyber Intelligence */
+  --accent-color: #10b981;
+  --accent-hover: #34d399;
+  --accent-muted: rgba(16, 185, 129, 0.15);
 
   /* Secondary accent */
-  --teal-accent: #18181b;
-  --teal-hover: #27272a;
-  --teal-muted: #f4f4f5;
+  --teal-accent: #10b981;
+  --teal-hover: #34d399;
+  --teal-muted: rgba(16, 185, 129, 0.15);
 
-  /* Status colors — Vercel minimal badges */
-  --status-critical-bg: #fef2f2;
-  --status-critical-border: #fecaca;
-  --status-critical-text: #991b1b;
+  /* Status colors — High-contrast dark badges */
+  --status-critical-bg: rgba(239, 68, 68, 0.15);
+  --status-critical-border: rgba(239, 68, 68, 0.35);
+  --status-critical-text: #f87171;
 
-  --status-high-bg: #fffbeb;
-  --status-high-border: #fde68a;
-  --status-high-text: #92400e;
+  --status-high-bg: rgba(245, 158, 11, 0.15);
+  --status-high-border: rgba(245, 158, 11, 0.35);
+  --status-high-text: #fbbf24;
 
-  --status-medium-bg: #f4f4f5;
-  --status-medium-border: #e4e4e7;
-  --status-medium-text: #27272a;
+  --status-medium-bg: rgba(59, 130, 246, 0.15);
+  --status-medium-border: rgba(59, 130, 246, 0.35);
+  --status-medium-text: #60a5fa;
 
-  --status-low-bg: #fafafa;
-  --status-low-border: #e4e4e7;
-  --status-low-text: #71717a;
+  --status-low-bg: rgba(161, 161, 170, 0.12);
+  --status-low-border: rgba(161, 161, 170, 0.25);
+  --status-low-text: #d4d4d8;
 
-  --status-success-bg: #f0fdf4;
-  --status-success-border: #bbf7d0;
-  --status-success-text: #166534;
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-success-border: rgba(16, 185, 129, 0.35);
+  --status-success-text: #34d399;
 
   /* Danger */
   --danger-color: #ef4444;
   --danger-hover: #dc2626;
-  --danger-muted: #fef2f2;
+  --danger-muted: rgba(239, 68, 68, 0.15);
 }
 
 @theme inline {
@@ -111,12 +111,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e4e4e7;
+  background: #27272a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: #3f3f46;
 }
 
 .scrollbar-none::-webkit-scrollbar {
@@ -145,11 +145,12 @@ html, body {
 }
 
 .card:hover {
-  border-color: #d4d4d8;
+  border-color: #3f3f46;
 }
 
 .glass-panel {
-  background: var(--card-bg);
+  background: rgba(18, 18, 21, 0.85);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--card-border);
   border-radius: 8px;
 }
@@ -159,14 +160,14 @@ html, body {
    ============================================================ */
 
 .btn-primary {
-  background-color: #000000;
-  color: #ffffff;
-  font-weight: 500;
+  background-color: #10b981;
+  color: #09090b;
+  font-weight: 600;
   font-size: 0.75rem;
   padding: 0.5rem 0.875rem;
   min-height: 36px;
   border-radius: 6px;
-  border: 1px solid #000000;
+  border: 1px solid #10b981;
   cursor: pointer;
   transition: all 0.15s ease;
   display: inline-flex;
@@ -174,17 +175,18 @@ html, body {
   justify-content: center;
   gap: 0.375rem;
   touch-action: manipulation;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
 }
 
 .btn-primary:hover {
-  background-color: #18181b;
-  border-color: #18181b;
+  background-color: #34d399;
+  border-color: #34d399;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
 }
 
 .btn-secondary {
-  background-color: #ffffff;
-  color: #09090b;
+  background-color: #18181c;
+  color: #f4f4f5;
   font-weight: 500;
   font-size: 0.75rem;
   padding: 0.5rem 0.875rem;
@@ -201,12 +203,13 @@ html, body {
 }
 
 .btn-secondary:hover {
-  background-color: #f4f4f5;
-  border-color: #d4d4d8;
+  background-color: #27272a;
+  border-color: #3f3f46;
+  color: #ffffff;
 }
 
 /* ============================================================
-   BADGE UTILITIES (Vercel Minimal Monospace Badges)
+   BADGE UTILITIES
    ============================================================ */
 
 .badge {
@@ -273,7 +276,7 @@ html, body {
 
 .data-table thead tr {
   border-bottom: 1px solid var(--card-border);
-  background-color: #fafafa;
+  background-color: #121215;
 }
 
 .data-table thead th {
@@ -283,7 +286,7 @@ html, body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #71717a;
+  color: #a1a1aa;
 }
 
 .data-table tbody tr {
@@ -292,7 +295,7 @@ html, body {
 }
 
 .data-table tbody tr:hover {
-  background-color: #fafafa;
+  background-color: #18181c;
 }
 
 .data-table tbody td {
@@ -308,7 +311,7 @@ html, body {
   width: 100%;
   min-height: 38px;
   padding: 0.5rem 0.75rem;
-  background-color: #ffffff;
+  background-color: #121215;
   border: 1px solid var(--card-border);
   border-radius: 6px;
   color: var(--text-primary);
@@ -319,19 +322,19 @@ html, body {
 }
 
 .form-input::placeholder {
-  color: #a1a1aa;
+  color: #71717a;
 }
 
 .form-input:focus {
-  border-color: #000000;
-  box-shadow: 0 0 0 1px #000000;
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981;
 }
 
 .form-select {
   width: 100%;
   min-height: 38px;
   padding: 0.5rem 0.75rem;
-  background-color: #ffffff;
+  background-color: #121215;
   border: 1px solid var(--card-border);
   border-radius: 6px;
   color: var(--text-primary);
@@ -342,8 +345,8 @@ html, body {
 }
 
 .form-select:focus {
-  border-color: #000000;
-  box-shadow: 0 0 0 1px #000000;
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981;
 }
 
 /* ============================================================
@@ -387,21 +390,85 @@ html, body {
 }
 
 /* ============================================================
-   DRAG & DROP UPLOAD ZONE (Vercel Style)
+   DRAG & DROP UPLOAD ZONE
    ============================================================ */
 
 .upload-zone {
-  border: 1px dashed #d4d4d8;
+  border: 1px dashed #3f3f46;
   border-radius: 8px;
-  background-color: #ffffff;
+  background-color: #121215;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .upload-zone:hover {
-  border-color: #a1a1aa;
+  border-color: #10b981;
 }
 
 .upload-zone.drag-active {
-  border-color: #000000;
-  background-color: #fafafa;
+  border-color: #10b981;
+  background-color: #18181c;
 }
+
+/* ============================================================
+   DARK INTELLIGENCE THEME COMPATIBILITY LAYER
+   Smoothly maps legacy light utilities to the high-contrast
+   cyber intelligence palette across all dashboard pages.
+   ============================================================ */
+
+.text-black {
+  color: #f4f4f5 !important;
+}
+
+.text-zinc-900 {
+  color: #f4f4f5 !important;
+}
+
+.text-zinc-800 {
+  color: #e4e4e7 !important;
+}
+
+.text-zinc-700 {
+  color: #d4d4d8 !important;
+}
+
+.hover\:text-black:hover {
+  color: #ffffff !important;
+}
+
+.bg-white {
+  background-color: var(--card-bg) !important;
+}
+
+.hover\:bg-white:hover {
+  background-color: #27272a !important;
+}
+
+.bg-zinc-50 {
+  background-color: #121215 !important;
+}
+
+.bg-zinc-100 {
+  background-color: #18181c !important;
+}
+
+.hover\:bg-zinc-100:hover {
+  background-color: #27272a !important;
+}
+
+.hover\:bg-zinc-50:hover {
+  background-color: #18181c !important;
+}
+
+.border-zinc-100, .border-zinc-200, .border-zinc-300 {
+  border-color: var(--card-border) !important;
+}
+
+.divide-zinc-100 > :not([hidden]) ~ :not([hidden]),
+.divide-zinc-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-subtle) !important;
+}
+
+.bg-zinc-200 {
+  background-color: #27272a !important;
+}
+

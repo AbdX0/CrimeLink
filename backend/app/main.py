@@ -4,6 +4,8 @@ Run with:
     uvicorn app.main:app --reload
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -101,10 +103,44 @@ def _init_db() -> None:
 _init_db()
 
 
+logger = logging.getLogger("crimelink")
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     """Ensure tables and demo users are present when server starts."""
     _init_db()
+    _check_connections()
+
+
+def _check_connections() -> None:
+    """Ping PostgreSQL and Neo4j and print a clear status line to stdout."""
+    print("\n" + "─" * 50)
+    print("  CrimeLink — Database Connection Check")
+    print("─" * 50)
+
+    # --- PostgreSQL ---
+    try:
+        from sqlalchemy import text
+        from app.database import engine
+
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("  ✅  PostgreSQL  — connected successfully")
+    except Exception as exc:
+        print(f"  ❌  PostgreSQL  — connection FAILED: {exc}")
+
+    # --- Neo4j ---
+    try:
+        from app.neo4j import get_driver
+
+        driver = get_driver()
+        driver.verify_connectivity()
+        print("  ✅  Neo4j       — connected successfully")
+    except Exception as exc:
+        print(f"  ❌  Neo4j       — connection FAILED: {exc}")
+
+    print("─" * 50 + "\n")
 
 
 @app.get("/")

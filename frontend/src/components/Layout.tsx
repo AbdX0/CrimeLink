@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import CrimeGraphLogo from './CrimeGraphLogo';
 import CrimeGraphLoader from './CrimeGraphLoader';
+import NotificationBell from './NotificationBell';
 import { getCurrentUser, getStoredUser, getToken, logout, login } from '../api/client';
 import type { AuthUser } from '../api/types';
 
@@ -95,10 +96,10 @@ export default function Layout() {
     <>
       {/* Brand Header */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--border)] shrink-0">
-        <CrimeGraphLogo size={22} textClassName="text-xs font-semibold text-black tracking-tight" />
+        <CrimeGraphLogo size={22} textClassName="text-xs font-semibold text-white tracking-tight" />
         <button
           onClick={() => setMobileMenuOpen(false)}
-          className="lg:hidden p-1.5 text-zinc-400 hover:text-black rounded cursor-pointer"
+          className="lg:hidden p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded cursor-pointer"
         >
           ✕
         </button>
@@ -107,7 +108,7 @@ export default function Layout() {
       {/* Navigation links */}
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto touch-scroll">
         <div className="space-y-1">
-          <span className="px-2.5 text-[10px] font-mono text-zinc-400 tracking-widest uppercase block mb-1.5">Intelligence</span>
+          <span className="px-2.5 text-[10px] font-mono text-zinc-500 tracking-widest uppercase block mb-1.5">Intelligence</span>
           {visibleMenuItems
             .filter((item) => !['Admin Panel', 'Audit Logs'].includes(item.name))
             .map((item) => {
@@ -119,8 +120,8 @@ export default function Layout() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-black text-white shadow-xs'
-                      : 'text-zinc-600 hover:bg-zinc-100 hover:text-black'
+                      ? 'bg-zinc-900 border border-zinc-800 text-emerald-400 font-semibold shadow-xs'
+                      : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100'
                   }`}
                 >
                   <svg className="w-3.5 h-3.5 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
@@ -135,7 +136,7 @@ export default function Layout() {
         {/* Administration Section */}
         {visibleMenuItems.some((item) => ['Admin Panel', 'Audit Logs'].includes(item.name)) && (
           <div className="space-y-1 pt-2 border-t border-[var(--border-subtle)]">
-            <span className="px-2.5 text-[10px] font-mono text-zinc-400 tracking-widest uppercase block mb-1.5">System</span>
+            <span className="px-2.5 text-[10px] font-mono text-zinc-500 tracking-widest uppercase block mb-1.5">System</span>
             {visibleMenuItems
               .filter((item) => ['Admin Panel', 'Audit Logs'].includes(item.name))
               .map((item) => {
@@ -149,8 +150,8 @@ export default function Layout() {
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                       isActive
-                        ? 'bg-black text-white shadow-xs'
-                        : 'text-zinc-600 hover:bg-zinc-100 hover:text-black'
+                        ? 'bg-zinc-900 border border-zinc-800 text-emerald-400 font-semibold shadow-xs'
+                        : 'text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-100'
                     }`}
                   >
                     <svg className="w-3.5 h-3.5 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
@@ -165,19 +166,19 @@ export default function Layout() {
       </nav>
 
       {/* User Info Footer */}
-      <div className="p-3 border-t border-[var(--border)] bg-zinc-50 flex items-center justify-between shrink-0">
+      <div className="p-3 border-t border-[var(--border)] bg-[#09090b] flex items-center justify-between shrink-0">
         <div className="min-w-0 pr-2">
-          <p className="text-xs font-semibold text-black truncate">{user.username}</p>
+          <p className="text-xs font-semibold text-white truncate">{user.username}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="badge bg-zinc-200 border-zinc-300 text-zinc-800 font-mono">
+            <span className="badge bg-zinc-900 border border-zinc-800 text-emerald-400 font-mono">
               {user.role === 'INVESTIGATOR' ? 'OFFICER' : user.role}
             </span>
-            <span className="text-[10px] text-zinc-400 truncate">{maskEmail(user.username)}</span>
+            <span className="text-[10px] text-zinc-500 truncate">{maskEmail(user.username)}</span>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="p-1.5 text-zinc-400 hover:text-black hover:bg-zinc-200 rounded transition-colors cursor-pointer"
+          className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors cursor-pointer"
           title="Log Out"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +205,7 @@ export default function Layout() {
       {/* Mobile Drawer Backdrop */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
@@ -229,11 +230,11 @@ export default function Layout() {
 
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col overflow-hidden relative w-full">
-        <header className="h-14 bg-white border-b border-[var(--border)] flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
+        <header className="h-14 bg-[#0c0c0e] border-b border-[var(--border)] flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-1 text-[var(--text-secondary)] hover:text-black hover:bg-zinc-100 rounded-lg cursor-pointer transition-all"
+              className="lg:hidden p-2 -ml-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer transition-all"
               aria-label="Open mobile menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +244,7 @@ export default function Layout() {
 
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden lg:flex p-1.5 text-zinc-400 hover:text-black hover:bg-zinc-100 rounded-md cursor-pointer transition-all"
+              className="hidden lg:flex p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md cursor-pointer transition-all"
               aria-label="Toggle sidebar"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,13 +252,14 @@ export default function Layout() {
               </svg>
             </button>
 
-            <span className="text-xs font-semibold text-black truncate">
+            <span className="text-xs font-semibold text-white tracking-tight truncate">
               {currentPageTitle}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="badge bg-zinc-100 text-zinc-800 font-mono">
+          <div className="flex items-center gap-3 shrink-0">
+            <NotificationBell />
+            <span className="badge bg-zinc-900 border border-zinc-800 text-emerald-400 font-mono">
               {portalLabel}
             </span>
           </div>

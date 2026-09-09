@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import CrimeGraphLoader from '../components/CrimeGraphLoader';
 import { getSuspiciousPatterns } from '../api/client';
 import type { SuspiciousAlert } from '../api/types';
+import { showToast } from '../utils/toast';
 
 export default function AlertsPage() {
   const [loading, setLoading] = useState(true);
@@ -15,8 +16,9 @@ export default function AlertsPage() {
       try {
         const resp = await getSuspiciousPatterns();
         setAlerts(resp.alerts || []);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load suspicious alerts:', err);
+        showToast.error('Alerts Error', err?.message || 'Failed to query suspicious network patterns.');
       } finally {
         setLoading(false);
       }

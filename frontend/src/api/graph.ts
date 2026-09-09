@@ -189,3 +189,33 @@ export const getPersonsList = (limit = 100) =>
 /** Fetch full entity investigation profile. */
 export const getEntityProfile = (nodeId: string) =>
   request<EntityProfileResponse>(`/graph/entity/${encodeURIComponent(nodeId)}/profile`);
+
+export interface KeyInfluencerItem {
+  entity_id: string;
+  name: string;
+  labels: string[];
+  primary_label: string;
+  role: 'KINGPIN' | 'BROKER' | 'MONEY_MULE' | 'DISPATCHER' | 'RUNNER' | 'DROP_POINT' | 'SHELL_COMPANY' | 'LIEUTENANT' | 'AFFILIATE' | 'OPERATIVE' | 'CASE_ENVELOPE';
+  role_title: string;
+  badge_color: string;
+  badge_icon: string;
+  influence_score: number;
+  degree: number;
+  pagerank: number;
+  betweenness: number;
+  operational_links: number;
+  source_record_id: number | null;
+  explanation: string;
+}
+
+export interface KeyInfluencersResponse {
+  algorithm: string;
+  metrics_used: string[];
+  count: number;
+  results: KeyInfluencerItem[];
+}
+
+/** Fetch key influencers identified via PageRank, Betweenness Centrality, and Degree Centrality. */
+export const getKeyInfluencers = (limit = 50) =>
+  request<KeyInfluencersResponse>(`/analytics/key-influencers?limit=${limit}`);
+

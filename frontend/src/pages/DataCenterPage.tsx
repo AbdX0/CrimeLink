@@ -11,6 +11,8 @@ import type {
   SourceRecordListItem,
   PipelineProcessResponse,
 } from '../api/types';
+import { showToast } from '../utils/toast';
+import { emitPushNotification } from '../components/NotificationBell';
 
 export default function DataCenterPage() {
   const [dataClassification, setDataClassification] = useState('FIR_REPORTS');
@@ -64,8 +66,11 @@ export default function DataCenterPage() {
     try {
       await deleteSourceRecord(id);
       setRecentDocuments((prev) => prev.filter((d) => d.id !== id));
+      showToast.success('Record Removed', `Evidence document #${id} purged successfully.`);
     } catch (err: any) {
-      setDeleteDocError(err?.message || 'Failed to delete record.');
+      const msg = err?.message || 'Failed to delete record.';
+      setDeleteDocError(msg);
+      showToast.error('Deletion Failed', msg);
     } finally {
       setDeletingId(null);
     }
@@ -135,6 +140,7 @@ export default function DataCenterPage() {
 
     setUploading(true);
     setUploadStage('UPLOADING');
+    const toastId = showToast.loading(`Ingesting "${recordTitle.trim() || selectedFiles[0].name}"...`);
 
     try {
       const fileToUpload = selectedFiles[0];
@@ -147,12 +153,15 @@ export default function DataCenterPage() {
       const title = recordTitle.trim() || fileToUpload.name;
       const resp: PipelineProcessResponse = await processPipelineFile(fileToUpload, title);
 
+      const entitiesCount = resp.entities?.length || 0;
+      const nodesCount = resp.graph?.nodes_created || 0;
+
       setUploadSuccessPayload({
         recordId: resp.source_record_id,
         filename: fileToUpload.name,
-        entitiesExtracted: resp.entities?.length || 0,
+        entitiesExtracted: entitiesCount,
         entitiesResolved: resp.resolution?.entities_resolved || 0,
-        nodesCreated: resp.graph?.nodes_created || 0,
+        nodesCreated: nodesCount,
         relationshipsCreated: resp.graph?.relationships_created || 0,
       });
 
@@ -161,9 +170,22 @@ export default function DataCenterPage() {
       setRecordTitle('');
       if (fileInputRef.current) fileInputRef.current.value = '';
 
+      showToast.dismiss(toastId);
+      showToast.success('Pipeline Complete', `Extracted ${entitiesCount} entities, mapped ${nodesCount} graph nodes.`);
+
+      emitPushNotification({
+        title: 'Evidence Ingestion Complete',
+        message: `Dataset "${title}" processed: ${entitiesCount} entities extracted, ${nodesCount} network nodes created.`,
+        severity: 'SUCCESS',
+        link: '/network',
+      });
+
       fetchRecentDocuments();
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Ingestion pipeline rejected the uploaded file.');
+      showToast.dismiss(toastId);
+      const errMsg = err?.message || 'Ingestion pipeline rejected the uploaded file.';
+      setErrorMessage(errMsg);
+      showToast.error('Pipeline Extraction Error', errMsg);
       setFailedStage('PIPELINE_EXTRACTION');
       setUploadStage('FAILED');
     } finally {
@@ -191,7 +213,8 @@ export default function DataCenterPage() {
       </div>
 
       {/* MULTI-STAGE PIPELINE STEPPER VISUALIZATION */}
-      <div className="card p-4 bg-white border border-[var(--border)]">
+      {/* MULTI-STAGE PIPELINE STEPPER VISUALIZATION */}
+      <div className="card p-4 bg-[#121215] border border-zinc-800">
         <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 touch-scroll">
           {[
             { step: '1', title: 'File Selected', stageKey: 'SELECTED' },
@@ -213,10 +236,10 @@ export default function DataCenterPage() {
                     isError
                       ? 'bg-red-600 text-white'
                       : isCurrent
-                      ? 'bg-black text-white shadow-xs animate-pulse'
+                      ? 'bg-emerald-500 text-zinc-950 shadow-xs animate-pulse font-extrabold'
                       : isCompleted
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-zinc-100 text-zinc-400 border border-zinc-200'
+                      : 'bg-zinc-900 text-zinc-500 border border-zinc-800'
                   }`}
                 >
                   {isError ? '✕' : isCompleted ? '✓' : st.step}
@@ -224,15 +247,15 @@ export default function DataCenterPage() {
                 <span
                   className={`text-xs font-medium whitespace-nowrap ${
                     isError
-                      ? 'text-red-700 font-semibold'
+                      ? 'text-red-400 font-semibold'
                       : isCurrent
-                      ? 'text-black font-semibold'
-                      : 'text-zinc-500'
+                      ? 'text-emerald-400 font-semibold'
+                      : 'text-zinc-400'
                   }`}
                 >
                   {st.title}
                 </span>
-                {idx < 5 && <div className="h-px w-6 sm:w-12 bg-zinc-200 shrink-0 hidden xs:block ml-2" />}
+                {idx < 5 && <div className="h-px w-6 sm:w-12 bg-zinc-800 shrink-0 hidden xs:block ml-2" />}
               </div>
             );
           })}
@@ -241,24 +264,24 @@ export default function DataCenterPage() {
 
       {/* ERROR / FAILED TELEMETRY PANEL */}
       {uploadStage === 'FAILED' && errorMessage && (
-        <div className="card p-5 border-red-300 bg-red-50/40 space-y-3 relative">
+        <div className="card p-5 border-red-900/50 bg-red-950/30 space-y-3 relative">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-red-100 border border-red-300 text-red-700 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full bg-red-900/40 border border-red-700/50 text-red-300 flex items-center justify-center shrink-0">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-red-900">Pipeline Execution Failed</h3>
-                <p className="text-xs text-red-700 mt-0.5 font-mono">
+                <h3 className="text-sm font-semibold text-red-300">Pipeline Execution Failed</h3>
+                <p className="text-xs text-red-400 mt-0.5 font-mono">
                   Failed Stage: <span className="font-bold">{failedStage || 'INGESTION'}</span>
                 </p>
               </div>
             </div>
-            <button onClick={() => setUploadStage('IDLE')} className="text-xs text-red-400 hover:text-red-800 p-1 cursor-pointer">✕</button>
+            <button onClick={() => setUploadStage('IDLE')} className="text-xs text-red-400 hover:text-white p-1 cursor-pointer">✕</button>
           </div>
-          <p className="text-xs text-red-800 bg-white border border-red-200 p-2.5 rounded font-mono leading-relaxed">
+          <p className="text-xs text-red-300 bg-zinc-900/80 border border-red-900/40 p-2.5 rounded font-mono leading-relaxed">
             {errorMessage}
           </p>
           <div className="pt-1 flex justify-end">
@@ -274,55 +297,55 @@ export default function DataCenterPage() {
 
       {/* SUCCESS TELEMETRY PANEL */}
       {uploadSuccessPayload && (
-        <div className="card p-6 border-emerald-300 bg-emerald-50/30 space-y-4 relative overflow-hidden">
+        <div className="card p-6 border-emerald-500/30 bg-emerald-950/20 space-y-4 relative overflow-hidden">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full bg-emerald-900/40 border border-emerald-500/40 text-emerald-300 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-zinc-900">Dataset Upload & AI Ingestion Successful</h3>
-                <p className="text-xs text-zinc-600 mt-0.5">
+                <h3 className="text-sm font-semibold text-zinc-100">Dataset Upload & AI Ingestion Successful</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
                   Record #{uploadSuccessPayload.recordId} persisted to PostgreSQL and populated in Neo4j knowledge graph.
                 </p>
               </div>
             </div>
             <button
               onClick={() => setUploadSuccessPayload(null)}
-              className="text-xs text-zinc-400 hover:text-black p-1 rounded cursor-pointer"
+              className="text-xs text-zinc-400 hover:text-white p-1 rounded cursor-pointer"
             >
               ✕
             </button>
           </div>
 
           {/* Document Telemetry Records */}
-          <div className="bg-white border border-zinc-200 rounded-md p-3 text-xs space-y-2">
+          <div className="bg-[#101014] border border-zinc-800 rounded-md p-3 text-xs space-y-2">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex items-center gap-2.5">
-                <span className="badge bg-zinc-100 text-zinc-700 font-mono">ID #{uploadSuccessPayload.recordId}</span>
-                <span className="font-semibold text-black truncate">{uploadSuccessPayload.filename}</span>
+                <span className="badge bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono">ID #{uploadSuccessPayload.recordId}</span>
+                <span className="font-semibold text-white truncate">{uploadSuccessPayload.filename}</span>
               </div>
               <span className="badge badge-success font-mono shrink-0">COMPLETED</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-zinc-100 text-[11px] font-mono">
-              <div className="p-2 bg-zinc-50 rounded">
-                <span className="text-zinc-400 block text-[9px]">EXTRACTED</span>
-                <span className="font-bold text-black">{uploadSuccessPayload.entitiesExtracted} Entities</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-zinc-800 text-[11px] font-mono">
+              <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800/50">
+                <span className="text-zinc-500 block text-[9px]">EXTRACTED</span>
+                <span className="font-bold text-emerald-400">{uploadSuccessPayload.entitiesExtracted} Entities</span>
               </div>
-              <div className="p-2 bg-zinc-50 rounded">
-                <span className="text-zinc-400 block text-[9px]">RESOLVED</span>
-                <span className="font-bold text-black">{uploadSuccessPayload.entitiesResolved} Entities</span>
+              <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800/50">
+                <span className="text-zinc-500 block text-[9px]">RESOLVED</span>
+                <span className="font-bold text-emerald-400">{uploadSuccessPayload.entitiesResolved} Entities</span>
               </div>
-              <div className="p-2 bg-zinc-50 rounded">
-                <span className="text-zinc-400 block text-[9px]">NODES CREATED</span>
-                <span className="font-bold text-black">{uploadSuccessPayload.nodesCreated} Nodes</span>
+              <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800/50">
+                <span className="text-zinc-500 block text-[9px]">NODES CREATED</span>
+                <span className="font-bold text-emerald-400">{uploadSuccessPayload.nodesCreated} Nodes</span>
               </div>
-              <div className="p-2 bg-zinc-50 rounded">
-                <span className="text-zinc-400 block text-[9px]">EDGES CREATED</span>
-                <span className="font-bold text-black">{uploadSuccessPayload.relationshipsCreated} Edges</span>
+              <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800/50">
+                <span className="text-zinc-500 block text-[9px]">EDGES CREATED</span>
+                <span className="font-bold text-emerald-400">{uploadSuccessPayload.relationshipsCreated} Edges</span>
               </div>
             </div>
           </div>

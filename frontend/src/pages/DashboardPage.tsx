@@ -8,7 +8,7 @@ import {
   getDegreeCentrality,
   getSuspiciousPatterns,
 } from '../api/client';
-import { getGraphNetwork } from '../api/graph';
+import { getGraphNetwork, getKeyInfluencers, type KeyInfluencerItem } from '../api/graph';
 import type {
   AuthUser,
   HealthStatus,
@@ -25,18 +25,20 @@ export default function DashboardPage() {
   const [centrality, setCentrality] = useState<AnalyticsEntityScore[]>([]);
   const [totalEdges, setTotalEdges] = useState<number>(0);
   const [suspicious, setSuspicious] = useState<SuspiciousResponse | null>(null);
+  const [influencers, setInfluencers] = useState<KeyInfluencerItem[]>([]);
 
   useEffect(() => {
     async function loadDashboard() {
       setLoading(true);
       try {
-        const [healthRes, recordsRes, centralityRes, graphRes, suspiciousRes] =
+        const [healthRes, recordsRes, centralityRes, graphRes, suspiciousRes, influencersRes] =
           await Promise.allSettled([
             getHealth(),
             listSourceRecords(10, 0),
             getDegreeCentrality(undefined, 8),
             getGraphNetwork(),
             getSuspiciousPatterns(),
+            getKeyInfluencers(6),
           ]);
 
         if (healthRes.status === 'fulfilled') setHealth(healthRes.value);
@@ -46,6 +48,9 @@ export default function DashboardPage() {
           setTotalEdges(graphRes.value.edges?.length || 0);
         }
         if (suspiciousRes.status === 'fulfilled') setSuspicious(suspiciousRes.value);
+        if (influencersRes.status === 'fulfilled' && influencersRes.value?.results) {
+          setInfluencers(influencersRes.value.results);
+        }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
       } finally {
@@ -120,13 +125,13 @@ export default function DashboardPage() {
           <Link
             key={stat.name}
             to={stat.href}
-            className={`card p-4 hover:border-zinc-400 transition-all ${
+            className={`card p-4 hover:border-emerald-500/50 hover:bg-[#16161a] transition-all group ${
               idx === 4 ? 'col-span-2 sm:col-span-1' : ''
             }`}
           >
             <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider truncate">{stat.name}</p>
-            <p className="text-2xl font-semibold text-black font-mono mt-2">{stat.value}</p>
-            <p className="text-[10px] text-zinc-500 mt-1 truncate">{stat.change}</p>
+            <p className="text-2xl font-bold text-white font-mono mt-2 group-hover:text-emerald-400 transition-colors">{stat.value}</p>
+            <p className="text-[10px] text-zinc-400 mt-1 truncate font-mono">{stat.change}</p>
           </Link>
         ))}
       </div>
@@ -135,11 +140,12 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Recent Evidence Records */}
         <div className="lg:col-span-2 card p-5 space-y-4">
-          <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest">
-              {isOfficer ? 'Recent Investigation Evidence' : 'Active Ingested Datasets'}
+          <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>{isOfficer ? 'Recent Investigation Evidence' : 'Active Ingested Datasets'}</span>
             </h2>
-            <Link to="/datacenter" className="text-xs font-medium text-black hover:underline">
+            <Link to="/datacenter" className="text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:underline">
               View Data Center →
             </Link>
           </div>
@@ -150,22 +156,22 @@ export default function DashboardPage() {
             </div>
           ) : records.length === 0 ? (
             <div className="py-8 text-center space-y-2">
-              <p className="text-xs font-semibold text-black">No evidence records ingested</p>
-              <p className="text-xs text-zinc-500">Upload CDRs, bank records, or FIRs in the Data Center to start intelligence extraction.</p>
+              <p className="text-xs font-semibold text-white">No evidence records ingested</p>
+              <p className="text-xs text-zinc-400">Upload CDRs, bank records, or FIRs in the Data Center to start intelligence extraction.</p>
               <Link to="/datacenter" className="btn-primary text-xs inline-flex px-3 py-1.5 mt-1">
                 Upload Dataset
               </Link>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-100">
+            <div className="divide-y divide-zinc-800/80">
               {records.slice(0, 6).map((rec) => (
                 <div key={rec.id} className="py-3 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="badge bg-zinc-100 border-zinc-200 text-zinc-800 font-mono text-[10px]">
+                      <span className="badge bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono text-[10px]">
                         {rec.source_type || 'FILE'}
                       </span>
-                      <p className="text-xs font-semibold text-black truncate">
+                      <p className="text-xs font-semibold text-zinc-100 truncate">
                         {rec.title || `Record #${rec.id}`}
                       </p>
                     </div>
@@ -187,61 +193,84 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right Column: Top Entities & Quick Actions */}
+        {/* Right Column: Key Network Influencers & Quick Actions */}
         <div className="space-y-6">
-          {/* Top Entities */}
-          <div className="card p-5 space-y-3">
-            <div className="flex justify-between items-center border-b border-zinc-100 pb-3">
-              <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest">
-                High-Degree Entities
-              </h2>
-              <Link to="/entities" className="text-xs font-medium text-black hover:underline">
-                All →
+          {/* Key Network Influencers (Graph Centrality: PageRank, Betweenness, Degree) */}
+          <div className="card p-5 space-y-3.5 bg-[#121215] border border-zinc-800">
+            <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
+              <div>
+                <h2 className="text-xs font-mono text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Key Influencers</span>
+                </h2>
+                <span className="text-[9px] font-mono text-zinc-400 block mt-0.5">
+                  Topological Centrality (PageRank + Bridges)
+                </span>
+              </div>
+              <Link to="/network" className="text-xs font-mono text-emerald-400 hover:text-emerald-300 hover:underline">
+                Explore Graph →
               </Link>
             </div>
 
             {loading ? (
               <div className="py-6 flex justify-center">
-                <CrimeGraphLoader size={20} text="Calculating centrality…" />
+                <CrimeGraphLoader size={20} text="Analyzing graph centrality…" />
               </div>
-            ) : centrality.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-4 text-center">No resolved entities in knowledge graph.</p>
+            ) : influencers.length === 0 ? (
+              <p className="text-xs text-zinc-400 py-4 text-center font-mono">No resolved entities in knowledge graph.</p>
             ) : (
-              <div className="space-y-2.5">
-                {centrality.slice(0, 5).map((ent, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs p-2 bg-zinc-50 border border-zinc-200 rounded">
-                    <div className="min-w-0 pr-2">
-                      <p className="font-semibold text-black truncate">{ent.name || ent.entity_id}</p>
-                      <span className="badge bg-zinc-200 text-zinc-700 font-mono text-[9px] mt-0.5">
-                        {ent.labels?.[0] || 'ENTITY'}
+              <div className="space-y-2">
+                {influencers.slice(0, 5).map((inf, idx) => (
+                  <Link
+                    key={idx}
+                    to={inf.primary_label === 'PERSON' ? `/network?person=${encodeURIComponent(inf.entity_id)}` : '/network'}
+                    className="block p-2.5 bg-[#16161a] hover:bg-[#1c1c22] border border-zinc-800/90 hover:border-zinc-700 rounded-lg transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base shrink-0">{inf.badge_icon}</span>
+                        <p className="font-semibold text-zinc-100 text-xs truncate group-hover:text-emerald-400 transition-colors">
+                          {inf.name}
+                        </p>
+                      </div>
+                      <span
+                        className="font-mono font-bold text-[9px] px-1.5 py-0.5 rounded border shrink-0 tracking-wider uppercase"
+                        style={{
+                          backgroundColor: `${inf.badge_color}20`,
+                          borderColor: `${inf.badge_color}60`,
+                          color: inf.badge_color,
+                        }}
+                      >
+                        {inf.role}
                       </span>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] font-mono text-zinc-400 block">Degree</span>
-                      <span className="font-mono font-semibold text-black text-xs">{ent.score ?? ent.degree ?? 0}</span>
+
+                    <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 pt-1.5 border-t border-zinc-800/80">
+                      <span>PR: <strong className="text-zinc-200">{inf.pagerank.toFixed(2)}</strong> • Deg: <strong className="text-zinc-200">{inf.degree}</strong></span>
+                      <span className="font-semibold" style={{ color: inf.badge_color }}>Score: {inf.influence_score}</span>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
 
           {/* Quick Actions Card */}
-          <div className="card p-5 space-y-3 bg-zinc-50/50">
-            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-200 pb-2">
+          <div className="card p-5 space-y-3 bg-[#121215] border border-zinc-800">
+            <h2 className="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">
               Intelligence Quick Actions
             </h2>
             <div className="grid grid-cols-2 gap-2">
-              <Link to="/network" className="btn-secondary text-xs py-2 text-center">
+              <Link to="/network" className="btn-secondary text-xs py-2 text-center hover:border-emerald-500/40">
                 🕸 Link Graph
               </Link>
-              <Link to="/alerts" className="btn-secondary text-xs py-2 text-center">
+              <Link to="/alerts" className="btn-secondary text-xs py-2 text-center hover:border-amber-500/40">
                 ⚠ Risk Alerts
               </Link>
-              <Link to="/datacenter" className="btn-secondary text-xs py-2 text-center">
+              <Link to="/datacenter" className="btn-secondary text-xs py-2 text-center hover:border-blue-500/40">
                 📥 Ingest Data
               </Link>
-              <Link to="/entities" className="btn-secondary text-xs py-2 text-center">
+              <Link to="/entities" className="btn-secondary text-xs py-2 text-center hover:border-purple-500/40">
                 🔍 Entity Audit
               </Link>
             </div>

@@ -110,8 +110,8 @@ export default function AIAssistantPage() {
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-mono ${
                 m.sender === 'USER'
-                  ? 'bg-black text-white'
-                  : 'bg-white border border-zinc-200 text-black'
+                  ? 'bg-emerald-500 text-zinc-950 font-bold'
+                  : 'bg-[#141418] border border-zinc-800 text-white'
               }`}
             >
               {m.sender === 'USER' ? 'U' : <CrimeGraphLogo size={14} showText={false} />}
@@ -120,12 +120,12 @@ export default function AIAssistantPage() {
             <div
               className={`max-w-xl p-3.5 rounded-lg text-xs leading-relaxed space-y-1 ${
                 m.sender === 'USER'
-                  ? 'bg-black text-white'
-                  : 'bg-white border border-zinc-200 text-black shadow-xs'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-[#141418] border border-zinc-800 text-zinc-100 shadow-md'
               }`}
             >
               <p>{m.text}</p>
-              <p className={`text-[9px] font-mono ${m.sender === 'USER' ? 'text-zinc-400' : 'text-zinc-400'}`}>
+              <p className={`text-[9px] font-mono ${m.sender === 'USER' ? 'text-emerald-200' : 'text-zinc-500'}`}>
                 {m.time}
               </p>
             </div>
