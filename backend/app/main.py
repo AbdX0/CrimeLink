@@ -5,6 +5,7 @@ Run with:
 """
 
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,15 +37,21 @@ app = FastAPI(
 # Audit logging of authenticated/denied API requests (append-only).
 app.add_middleware(audit_service.AuditMiddleware)
 
-# Allow the investigator dashboard (Vite dev server) to call the API.
+# Allow the investigator dashboard to call the API.
+# In production set: ALLOWED_ORIGINS=https://your-app.vercel.app
+# Multiple origins can be comma-separated.
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173",
+)
+_cors_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 # Public endpoints (no authentication).
